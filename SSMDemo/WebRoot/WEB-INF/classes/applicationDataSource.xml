@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+	">
+
+	<aop:aspectj-autoproxy proxy-target-class="true"/>
+	
+	<!-- 载入properties文件 -->
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list><value>classpath:jdbc.properties</value></list>
+		</property>
+	</bean>
+	
+		<!-- 配置数据源 -->
+	<bean id="datasource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="${driverClassName}" />
+		<property name="url" value="${url}" />
+		<property name="username" value="${username}" />
+		<property name="password" value="${password}" />
+		<!-- 数据库连接池保持的最小连接数 -->
+		<property name="minIdle" value="${minIdle}" />
+		<!-- 数据库连接池保持的最大连接数 -->
+		<property name="maxIdle" value="${maxIdle}" />
+		<!--
+			当数据库连接因为某种原因断掉之后，再重新从连接池中拿另外一个连接时实际上这个连接可能
+			已经无效，所以为了确保所拿到的连接全都有效需要在获取连接，返回连接以及连接空闲时进行 有效性验证
+			下面3个设置为ture时进行验证，默认为false
+		-->
+		<!-- 取得连接时是否进行有效性验证 -->
+		<property name="testOnBorrow" value="true" />
+		<!-- 返回连接时是否进行有效性验证 -->
+		<property name="testOnReturn" value="true" />
+		<!-- 连接空闲时是否进行有效性验证 -->
+		<property name="testWhileIdle" value="true" />
+
+	</bean>
+
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="configLocation" value="classpath:mybatis-config.xml"/>
+	 	<property name="dataSource" ref="datasource"/>
+	 	<property name="mapperLocations">
+	 		<list>
+	 			<value>classpath:org/springmvc_demo/mapper/*.xml</value>
+	 		</list>
+	 	</property>
+	</bean>
+	
+	<!-- JDBC的事务管理 -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="datasource"/>
+	</bean>
+	
+	
+	<tx:advice transaction-manager="transactionManager" id="txAdvice">
+		<tx:attributes>
+			<tx:method name="add*" propagation="REQUIRED"/>
+			<tx:method name="save*" propagation="REQUIRED"/>
+			<tx:method name="update*" propagation="REQUIRED"/>
+			<tx:method name="modify*" propagation="REQUIRED"/>
+			<tx:method name="del*" propagation="REQUIRED"/>
+			<tx:method name="delete*" propagation="REQUIRED"/>
+			<tx:method name="find*" propagation="SUPPORTS" read-only="true"/>
+			<tx:method name="query*" propagation="SUPPORTS" read-only="true"/>
+			<tx:method name="*" read-only="true"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<aop:config>
+		
+		<aop:pointcut expression="execution(* org.springmvc_demo.service.impl.*.*(..))" id="transactionAop"/>
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="transactionAop"/>
+	</aop:config>
+	
+	<bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg index="0" ref="sqlSessionFactory"/>
+	</bean>
+	
+</beans>

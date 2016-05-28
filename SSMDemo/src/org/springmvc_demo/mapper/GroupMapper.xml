@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.springmvc_demo.dao.GroupDao">
+
+	<!-- 
+	这个resultMap使用的完全是在该配置文件中全部重新编写的配置
+	注意下面未注释的配置，conllection的resultMap使用的是一个已经存在的配置
+	如果使用已经注释的配置进行查询会有什么不同 ? 自己动手试一试
+	 
+	<resultMap type="org.springmvc_demo.entity.Group" id="groupMap">
+		<id column="groupId" property="groupId"/>
+		<result column="groupName" property="groupName"/>
+		<collection property="emplist" ofType="org.springmvc_demo.entity.Employe">
+			<id column="empId" property="empId"/>
+			<result column="empName" property="empName"/>
+			<result column="email" property="email"/>
+		</collection>
+	</resultMap>
+	 -->
+	 
+	<resultMap type="org.springmvc_demo.entity.Group" id="groupMap">
+		<id column="groupId" property="groupId"/>
+		<result column="groupName" property="groupName"/>
+		<collection property="emplist" resultMap="org.springmvc_demo.dao.EmployeDao.empMap"/>
+	</resultMap>
+
+	<select id="findById" parameterType="int" resultMap="groupMap">
+		select * from groups g , emp e where g.groupId = e.groupId and g.groupId = #{id}
+	</select>
+</mapper>

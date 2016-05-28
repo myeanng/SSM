@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.springmvc_demo.dao.EmployeDao">
+
+	<resultMap type="org.springmvc_demo.entity.Employe" id="empMap">
+		<id column="empId" property="empId"/>
+		<result column="empName" property="empName"/>
+		<result column="email" property="email"/>
+		<association property="group" javaType="org.springmvc_demo.entity.Group">
+			<id column="groupId" property="groupId"/>
+			<result column="groupName" property="groupName"/>
+		</association>
+	</resultMap>
+	
+	
+	<select id="findById" parameterType="int" resultMap="empMap">
+		select e.*,g.* from emp e, groups g where e.groupId = g.groupId and e.empId = #{id}
+	</select>
+	
+	
+	<select id="findEntityListByParam" resultMap="empMap" parameterType="int">
+		select e.*,g.* from emp e, groups g where e.groupId = g.groupId and g.groupId = #{id}
+	</select>
+	
+	
+	<insert id="add" parameterType="org.springmvc_demo.entity.Employe">
+		insert into emp(empName,email,groupId) values(#{empName} , #{email} ,#{group.groupId})
+	</insert>
+</mapper>

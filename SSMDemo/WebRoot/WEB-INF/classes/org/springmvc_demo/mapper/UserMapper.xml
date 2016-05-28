@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>	
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<!-- 
+ 	MyBatis中在查询进行select映射的时候，返回类型可以用resultType，也可以用resultMap，
+ 	resultType是直接表示返回类型的，而resultMap则是对外部ResultMap的引用，但是resultType
+ 	跟resultMap不能同时存在。在MyBatis进行查询映射的时候，其实查询出来的每一个属性都是
+ 	放在一个对应的Map里面的，其中键是属性名，值则是其对应的值。当提供的返回类型属性是
+ 	resultType的时候，MyBatis会将Map里面的键值对取出赋给resultType所指定的对象对应的属性。
+ 	所以其实MyBatis的每一个查询映射的返回类型都是ResultMap，只是当我们提供的返回类型属性是
+ 	resultType的时候，MyBatis对自动的给我们把对应的值赋给resultType所指定对象的属性，而当
+ 	我们提供的返回类型是resultMap的时候，因为Map不能很好表示领域模型，我们就需要自己再进一
+ 	步的把它转化为对应的对象，这常常在复杂查询中很有作用。
+ 	 -->
+<mapper namespace="org.springmvc_demo.dao.UserDao">
+	
+	<!-- 
+	标签的包含：对于基本的sql语句我们可以将其包含起来，以避免重复的代码
+	 -->
+	<sql id="pageSql" >
+		select userId,userName,pwd,email,createDate from users
+		<if test="user != null">
+			<where>
+				<if test="user.userName !=null and user.userName!= ''">userName = #{user.userName}</if>
+				<if test="user.pwd !=null and user.pwd!=''">pwd = #{user.pwd}</if>
+				<if test="user.email !=null and user.email!=''">email like concat( concat('%',#{user.email}) ,'%')</if>
+			</where>
+		</if>
+		order by userId desc
+	</sql>
+
+	<select id="findAllByPage" resultType="org.springmvc_demo.entity.User" parameterType="java.util.Map">
+		<include refid="pageSql"/>
+	</select>
+
+
+	<select id="findById" resultType="org.springmvc_demo.entity.User"
+		parameterType="int">
+		select userId,userName,pwd,email,createDate from users where userId = #{id}
+	</select>
+	
+	
+	<select id="getCount" resultType="int" parameterType="java.util.Map">
+		select count(*) from ( <include refid="pageSql"/> ) c
+	</select>
+	
+	<!-- 
+	where (主要是用来简化sql语句中where条件判断的，能智能的处理 and or 条件
+	where元素的作用是会在写入where元素的地方输出一个where，另外一个好处是你不
+	需要考虑where元素里面的条件输出是什么样子的，MyBatis会智能的帮你处理，如果
+	所有的条件都不满足那么MyBatis就会查出所有的记录，如果输出后是and 开头的，
+	MyBatis会把第一个and忽略，当然如果是or开头的，MyBatis也会把它忽略；此外，
+	在where元素中你不需要考虑空格的问题，MyBatis会智能的帮你加上。像上述例子中，
+	如果title=null， 而content != null，那么输出的整个语句会是
+	select * from t_blog where content = #{content}，而不是
+	select * from t_blog where and content = #{content}，因为MyBatis会智能
+	的把首个and 或 or 给忽略。
+	 -->
+	<select id="findByParam" resultType="org.springmvc_demo.entity.User" parameterType="org.springmvc_demo.entity.User">
+		select userId,userName,pwd,email,createDate from users 
+		<where>
+			<if test="userName != null and userName != '' ">userName = #{userName}</if>
+			<if test="pwd != null and pwd != ''">and pwd = #{pwd}</if>
+			<if test="email != null and email != ''">and email like concat( concat( '%' ,#{email}) ,'%' )</if>
+		</where>
+	</select>
+
+	<insert id="add" parameterType="org.springmvc_demo.entity.User">
+		insert into users(userName, pwd , email , createDate) values(#{userName}, #{pwd} , #{email} , #{createDate})
+	</insert>
+	
+	
+	<insert id="addBatch" parameterType="java.util.List">
+		insert into users(userName, pwd , email , createDate) 
+		values 
+		<foreach collection="list" item="user" separator=",">
+			( #{user.userName}, #{user.pwd} , #{user.email} , #{user.createDate} )
+		</foreach>
+	</insert>
+	
+	<!-- 
+	set元素主要是用在更新操作的时候，它的主要功能和where元素其实是差不多的，
+	主要是在包含的语句前输出一个set，然后如果包含的语句是以逗号结束的话将会把该逗号忽略，
+	如果set包含的内容为空的话则会出错。有了set元素我们就可以动态的更新那些修改了的字段
+	 -->
+	<update id="update" parameterType="org.springmvc_demo.entity.User">
+		update users 
+		<set>
+			<if test="userName !=null and userName!= ''">userName = #{userName}</if>
+			<if test="pwd !=null and pwd!=''">pwd = #{pwd}</if>
+			<if test="email !=null and email!=''">email = #{email}</if>
+		</set>
+		where userId = #{userId}
+	</update>
+
+
+	<delete id="delete" parameterType="int">
+		delete from users where userId = #{userId}
+	</delete>
+	
+	<!-- 
+	foreach标签可以针对数组，list，map进行循环
+	collection:这里可以写array，list，_parameter(map)
+	index="i" :这里变量i在数组和list中代表下标,map中表示key
+	item="ids":ids指的就是循环中的某个数据,map中表示的是value
+	 -->
+	<delete id="delByIds" parameterType="java.util.List">
+		delete from users where userId in 
+		<foreach collection="list" item="ids" open="(" close=")" separator=",">
+			#{ids}
+		</foreach>
+	</delete>
+</mapper>
